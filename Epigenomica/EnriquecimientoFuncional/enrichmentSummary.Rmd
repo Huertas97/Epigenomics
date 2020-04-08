@@ -1,0 +1,218 @@
+---
+title: 'Análisis de Enriquecimiento: genes anotados con annotatr'
+author: "Alejandro Martín Muñoz, Sara Dorado Alfaro, Álvaro Huertas García, Diego Mañanes Cayero"
+date: "17/3/2020"
+output: 
+  BiocStyle::html_document:
+    css: "./css/style.css"
+    toc: true
+    toc_float: true
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+geometry: margin=1in
+header-includes:
+- \usepackage{graphicx}
+- \usepackage{float}
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+fontsize: 11pt
+classoption: a4paper
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+## directories and paths
+# projectPath local
+projectPath <- "/home/diego/Documentos/proyectos_master/proyectos_transcriptomica/Epigenomica/Epigenomics/Epigenomica/"
+analysisPath <- file.path(projectPath, "Enriquecimiento_Funcional")
+outputPath <- file.path(analysisPath, "EnrichmentSummary/annotatrGenes")
+
+
+# data path github
+dataPath <- "/home/diego/Documentos/proyectos_master/proyectos_transcriptomica/Transcriptomics/Epigenomica/"
+
+dirO.7 <- "bed_E1_filtrado_0.7"
+setwd(analysisPath)
+
+if (!dir.exists(outputPath) | !dir.exists(file.path(outputPath, "Plots"))) {
+  dir.create(outputPath, recursive = T)
+  dir.create(file.path(outputPath, "Plots"), showWarnings = F)
+}
+
+# to files
+prefix <- "EnrichmentAnalysisSum"
+
+## helper functions
+# source(file.path(projectPath, "helperFunctions.R"))
+
+## Settings to knitr
+knitr::opts_chunk$set(
+    fig.align = "center",
+    fig.path = file.path(outputPath, "Plots/"),
+    fig.pos = "H",
+    message = FALSE,
+    warning = FALSE,
+    comment = NA,
+    dev = c("jpeg"),
+    dpi = 300
+)
+
+options(stringsAsFactors = FALSE)
+
+## packages used
+library(dplyr)
+library(clusterProfiler)
+library(GOSemSim)
+library(DOSE)
+library(ReactomePA)
+library(msigdbr)
+library(KEGGprofile)
+library(org.Hs.eg.db)
+library(annotatr)
+library(ggplot2)
+
+```
+
+# Carga de datos 
+```{r dataLoading}
+dataAnnotatr <- read.csv(file.path(dataPath, dirO.7, "annotatr_results_E1_0.7.csv"))
+```
+
+# Análisis
+
+## Términos GO
+
+```{r allGenes}
+allGenesDF <- data.frame(ENTREZID = dataAnnotatr$annot.gene_id,
+                       SYMBOL = dataAnnotatr$annot.symbol)
+
+# allGenesDF <- bitr(allGenes, fromType = "SYMBOL",
+#                       toType = c("ENSEMBL", "ENTREZID"),
+#                       OrgDb = org.Hs.eg.db)
+```
+
+```{r goAllGenes}
+ggo1 <- sapply(c("MF", "CC", "BP"), function(term) {
+              enrichGO(unique(allGenesDF$ENTREZID), org.Hs.eg.db,
+                             ont = term, qvalueCutoff = 0.05,
+                             readable = TRUE)})
+```
+
+
+```{r plotGoAllGenes}
+dotplot(ggo1$MF, showCategory = 20, font.size = 8)
+
+barplot(ggo1$MF, showCategory = 15, font.size = 9) + ggtitle("GO Molecular Function") + 
+  theme(plot.title = element_text(face = "bold"))
+
+ChIPseeker::upsetplot(ggo1$MF)
+  # upsetplot(ggo1$MF)
+
+# goplot(ggo1)
+```
+```{r}
+barplot(ggo1$CC, showCategory = 10, font.size = 9) + ggtitle("GO Cellular Component") + 
+  theme(plot.title = element_text(face = "bold"))
+```
+
+```{r, fig.asp=0.6, fig.width=10}
+barplot(ggo1$BP, showCategory = 20, font.size = 9) + ggtitle("GO Biological Process") + 
+  theme(plot.title = element_text(face = "bold"))
+```
+
+```{r simplifyGO}
+ggo1MFsimplified <- simplify(ggo1$MF)
+
+dotplot(ggo1MFsimplified, showCategory = 20, font.size = 8)
+
+barplot(ggo1MFsimplified, showCategory = 20, font.size = 8) + ggtitle("GO Molecular Function") + 
+  theme(plot.title = element_text(face = "bold"))
+
+```
+
+## Rutas KEGG
+
+```{r}
+kegg1 <- enrichKEGG(gene = allGenesDF$ENTREZID,
+                    organism = "hsa")
+```
+
+```{r}
+dotplot(kegg1, showCategory = 20, font.size = 9) + ggtitle("KEGG pathways") + 
+  theme(plot.title = element_text(face = "bold"))
+
+
+barplot(kegg1, showCategory = 20, font.size = 9) + ggtitle("KEGG pathways") + 
+  theme(plot.title = element_text(face = "bold"))
+
+ChIPseeker::upsetplot(kegg1) + ggtitle("KEGG pathways") + 
+  theme(plot.title = element_text(face = "bold"))
+```
+
+## Marcadores celulares: bbdd Cell Marker
+
+### Cell Markers analysis
+
+**Link datos:** <http://bio-bigdata.hrbmu.edu.cn/CellMarker>
+
+```{r}
+dataHumanCells <- read.delim(file.path(analysisPath, "/data/Human_cell_markers.txt"))
+
+dataHumanCells <- dataHumanCells %>% tidyr::unite("cellMarker", tissueType, 
+                                                  cancerType, cellName, sep=", ") %>% 
+   dplyr::select(cellMarker, geneID) %>%
+   dplyr::mutate(geneID = strsplit(geneID, ', '))
+```
+
+```{r}
+typeCells <- enricher(unique(allGenesDF$ENTREZID), TERM2GENE = dataHumanCells,
+                      pAdjustMethod = "fdr", minGSSize = 5, qvalueCutoff = 0.2)
+
+dotplot(typeCells, showCategory = 10, font.size = 8)
+barplot(typeCells, "GeneRatio", showCategory = 10, font.size = 9) + ggtitle("Enriquecimiento CellMarker") + 
+  theme(plot.title = element_text(face = "bold"))
+ChIPseeker::upsetplot(typeCells)
+```
+
+```{r}
+  motifs <- msigdbr(species = "Homo sapiens", category = "C3") 
+
+```
+
+
+### MSigDB (subset C7: células inmunes)
+
+```{r}
+geneImmSginature <- msigdbr(species = "Homo sapiens", category = "C7") %>% 
+  dplyr::select(gs_name, entrez_gene)
+
+immCells <- enricher(unique(allGenesDF$ENTREZID), TERM2GENE = geneImmSginature)
+```
+
+```{r, fig.asp=0.4, fig.width=9}
+dotplot(immCells, showCategory = 10, font.size = 6)
+barplot(immCells, "GeneRatio", showCategory = 10, font.size = 8) + ggtitle("Enriquecimiento MSigDB (C7)") + 
+  theme(plot.title = element_text(face = "bold"))
+ChIPseeker::upsetplot(immCells)
+```
+
+
+## DisGeNET: enriquecimiento con enfermedades
+
+```{r}
+dso1 <- enrichDGN(allGenesDF$ENTREZID, readable = TRUE)
+```
+
+```{r}
+dotplot(dso1, showCategory = 20, font.size = 8)
+
+barplot(dso1, showCategory = 20, font.size = 9) + ggtitle("Enriquecimiento MSigDB (C7)") + 
+  theme(plot.title = element_text(face = "bold"))
+
+ChIPseeker::upsetplot(dso1)
+```
