@@ -1,0 +1,24 @@
+# 1-order Markov frequencies from file ./intersect_E1_f0.7.fasta
+# seqs: 44008    min: 200    max: 200    avg: 200.0    sum: 8801600    alph: DNA
+# order 0
+A 1.916e-01
+C 3.084e-01
+G 3.084e-01
+T 1.916e-01
+# order 1
+AA 5.006e-02
+AC 4.451e-02
+AG 6.851e-02
+AT 2.849e-02
+CA 5.649e-02
+CC 1.075e-01
+CG 7.592e-02
+CT 6.851e-02
+GA 5.926e-02
+GC 9.715e-02
+GG 1.075e-01
+GT 4.451e-02
+TA 2.571e-02
+TC 5.926e-02
+TG 5.649e-02
+TT 5.006e-02

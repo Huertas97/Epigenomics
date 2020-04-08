@@ -1,0 +1,662 @@
+---
+title: "Enriquecimiento Funcional"
+author: "Diego Mañanes Cayero´"
+output: 
+  BiocStyle::html_document:
+    css: "./css/style.css"
+    toc: true
+    toc_float: true
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+geometry: margin=1in
+header-includes:
+- \usepackage{graphicx}
+- \usepackage{float}
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+fontsize: 11pt
+classoption: a4paper
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+## directories and paths
+# projectPath local
+projectPath <- "/home/diego/Documentos/proyectos_master/proyectos_transcriptomica/Epigenómica"
+analysisPath <- file.path(projectPath, "chipSeq.Analysis")
+outputPath <- file.path(analysisPath, "EnrichmentAnalysis")
+# data path github
+dataPath <- "/home/diego/Documentos/proyectos_master/proyectos_transcriptomica/Transcriptomics/Epigenomica/"
+
+dirO.7 <- "bed_E1_filtrado_0.7"
+setwd(analysisPath)
+
+if (!dir.exists(outputPath) | !dir.exists(file.path(outputPath, "Plots"))) {
+  dir.create(outputPath, recursive = T)
+  dir.create(file.path(outputPath, "Plots"), showWarnings = F)
+}
+
+# to files
+prefix <- "EnrichmentAnalysis"
+
+## helper functions
+# source(file.path(projectPath, "helperFunctions.R"))
+
+## Settings to knitr
+knitr::opts_chunk$set(
+    fig.align = "center",
+    fig.path = file.path(outputPath, "Plots/"),
+    fig.pos = "H",
+    message = FALSE,
+    warning = FALSE,
+    comment = NA,
+    dev = c("jpeg", "svg"),
+    dpi = 300
+)
+
+options(stringsAsFactors = FALSE)
+
+## packages used
+library(dplyr)
+library(clusterProfiler)
+library(GOSemSim)
+library(DOSE)
+library(ReactomePA)
+library(msigdbr)
+library(KEGGprofile)
+library(org.Hs.eg.db)
+
+library(ChIPpeakAnno)
+library(annotatr)
+library(ChIPseeker)
+
+## desinstalar, ocupa medio giga xd
+
+# library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+
+```
+
+# Introducción
+
+Vamos a llevar a cabo un enriquecimiento funcional con diferentes paquetes y 
+bases de datos de los genes anotados con los paquetes de anotación (``annotatr``).
+Un posible diseño será el siguiente:
+
+1. Coger todos los genes. No sé si esto realmente tiene sentido, lo suyo es que,
+poor algún criterio, seleccionemos genes de interés- En transcriptómica serían
+los genes diferencialmente expresados. Aquí, por probar, voy a hacer lo del siguiente
+punto. Hay que teneer en cuenta que por ejemplo DAVID tiene un límite de 
+queries de 2000 y el número de genes con el que contamos es de unos 11000. 
+2. Coger solo los genes anotados en los promotores, que son los verdaderamente 
+relevantes.
+3. Utilizar el fichero de Álvaro: _left join_ de intersección entre monocitos
+y iPS.
+
+Además, voy a probar otros programas además de la aproximación clásica con 
+``clusterProfiler``. 
+
+# Métodos
+
+## Qué hace GREAT
+
+**Link paper:** <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4840234/>
+
+We analyzed eight ChIP-seq data sets from a range of human and mouse cells and tissues (Supplementary Table 5), each with a different distribution of proximal and distal binding events (Fig. 2a). We tested each data set in six different ways: (i) by reproducing the original study’s list of enrichments, or if the original study did not report enrichments, by using DAVID on the set of genes with binding events within 2 kb of the transcription start site; (ii) by using GREAT with the default regulatory domain definition (basal promoter 5+1 kb and extension up to 1 Mb); (iii) by using GREAT’s hypergeometric test on the set of genes with binding events within 2 kb of the transcription start site, to control for the different gene mappings and ontologies in DAVID and GREAT; (iv) by using GREAT with a 5+1 kb basal promoter and a more limited 50 kb extension; and (v, vi) by using GREAT with either one (v) or two (vi) nearest genes up to 1 Mb (Tables 2 and and3,3, and Supplementary Tables 6–44, indexed in Supplementary Table 45).
+
+
+## Qué hace ``clusterProfiler``
+
+**Link vignette:** <https://yulab-smu.github.io/clusterProfiler-book/index.html>
+
+Lo mejor va a ser mirar la vignette, ya que hay bastantes posibilidades. Respecto
+a cosas interesantes, podemos:
+
+* Cell marker: tendría que buscar genes representativos de monocitos. 
+* Análisis de enfermedad: podría ser interesante para demostrar que son células
+inmunes, ya que deberían salir enfermedades del tipo leucemias.
+* Gene Ontology Analysis
+* KEGG pathways Analysis.
+* Reactome pathways Analysis.
+* Functional enrichment analysis of genomic coordinations. Funciona junto con 
+``ChIPseeker``, puede ser interesante.
+
+```{r dataLoading}
+dataAnnotatr <- read.csv(file.path(dataPath, dirO.7, "annotatr_results_E1_0.7.csv"))
+```
+
+# Análisis
+
+## Aproximación 1: cogemos todos los genes
+
+```{r allGenes}
+allGenesDF <- data.frame(ENTREZID = dataAnnotatr$annot.gene_id,
+                       SYMBOL = dataAnnotatr$annot.symbol)
+
+# allGenesDF <- bitr(allGenes, fromType = "SYMBOL",
+#                       toType = c("ENSEMBL", "ENTREZID"),
+#                       OrgDb = org.Hs.eg.db)
+```
+
+### ``clusterProfiler``
+
+#### GO Analysis
+
+##### Over-representation analysis
+
+Aquí podríamos coger como universo otra cosa: para ser más específicos, quizás
+podría coger genes presentes en alguna línea celular stem y ver qué genes están
+enriquecidos en la nuestra.
+
+```{r goAllGenes}
+ggo1 <- sapply(c("MF", "CC", "BP"), function(term) {
+              enrichGO(unique(allGenesDF$ENTREZID), org.Hs.eg.db,
+                             ont = term, qvalueCutoff = 0.05,
+                             readable = TRUE)})
+```
+
+Respecto al _warning_ que devuelve, parece que es algo generalizado y que 
+ya les han comentado en git: <https://github.com/YuLab-SMU/enrichplot/issues/22>.
+
+```{r plotGoAllGenes}
+dotplot(ggo1$MF, showCategory = 20, font.size = 8)
+
+barplot(ggo1$MF, showCategory = 20, font.size = 8)
+
+upsetplot(ggo1$MF)
+
+# goplot(ggo1)
+```
+
+**Tabla resultados**
+
+```{r goTableAllGenes}
+DT::datatable(ggo1$MF@result)
+```
+
+```{r}
+ggo1MFsimplified <- simplify(ggo1$MF)
+
+dotplot(ggo1MFsimplified, showCategory = 20, font.size = 8)
+
+barplot(ggo1MFsimplified, showCategory = 20, font.size = 8)
+```
+
+
+#### Cell Markers analysis
+
+**Link datos:** <http://bio-bigdata.hrbmu.edu.cn/CellMarker>
+
+```{r}
+dataHumanCells <- read.delim(file.path(analysisPath, "/data/Human_cell_markers.txt"))
+
+dataHumanCells <- dataHumanCells %>% tidyr::unite("cellMarker", tissueType, 
+                                                  cancerType, cellName, sep=", ") %>% 
+   dplyr::select(cellMarker, geneID) %>%
+   dplyr::mutate(geneID = strsplit(geneID, ', '))
+```
+
+Mediante la función ``enricher`` podemos ver el enriquecimiento de genesets 
+propios en nuestro conjunto de genes. Es la msima base que con las anotaciones
+GO, pero aquí estamos construyendo nosotros la base de datos. 
+
+```{r}
+typeCells <- enricher(unique(allGenesDF$ENTREZID), TERM2GENE = dataHumanCells,
+                      pAdjustMethod = "fdr", minGSSize = 5, qvalueCutoff = 0.2)
+
+dotplot(typeCells, showCategory = 10, font.size = 8)
+barplot(typeCells, "GeneRatio", showCategory = 10, font.size = 8)
+upsetplot(typeCells)
+```
+
+```{r}
+DT::datatable(typeCells@result)
+```
+
+
+**Subset con células sangre**
+
+Estos datos, aunque no los usemos para estos análisis, son una posibilidad 
+para sacar genes que se suponen específicos de monocitos, al menos es algo
+de donde podemos sacar información.
+
+```{r}
+dataBloodCells <- read.delim(file.path(analysisPath, "/data/Human_cell_markers.txt"))
+
+monocytesInfo <- unique(dataBloodCells[grepl(".*([mM]onocyte)", dataBloodCells$cellName),]$tissueType)
+
+dataBloodCells <- dataBloodCells %>% filter(tissueType %in% monocytesInfo) %>% 
+                    tidyr::unite("cellMarker", tissueType, cancerType, cellName, sep=", ") %>% 
+                    dplyr::select(cellMarker, geneID) %>%
+                    dplyr::mutate(geneID = strsplit(geneID, ', '))
+```
+
+Con el subset no es capaz de sacar genesets significativos, ya que probablemente 
+los genes que ocmparten sean muy parecidos entre todos los grupos.
+
+```{r}
+typeCellsBlood <- enricher(unique(allGenesDF$ENTREZID), TERM2GENE = dataBloodCells,
+                      pAdjustMethod = "fdr", minGSSize = 5, qvalueCutoff = 0.2)
+
+dotplot(typeCellsBlood, showCategory = 10, font.size = 8)
+barplot(typeCellsBlood, "GeneRatio", showCategory = 10, font.size = 8)
+```
+
+```{r}
+DT::datatable(typeCellsBlood@result)
+```
+
+#### MSigDB analysis (C8)
+
+Es la base de datos de GSEA, tienen un apartado específico para células inmunes.
+Está bien que las entradas salgan relacionadas con monocitos, ya que estamos
+sesgando mucho el análisis por hacer enriquecimiento en una base de datos donde
+solo hay células inmunes. 
+
+**Información datos:**
+
+Immunologic signatures collection (also called ImmuneSigDB) is composed of gene
+sets that represent cell types, states, and perturbations within the immune
+system. The signatures were generated by manual curation of published studies 
+in human and mouse immunology.
+
+We first captured relevant microarray datasets published in the immunology 
+literature that have raw data deposited to Gene Expression Omnibus (GEO). For
+each published study, the relevant comparisons were identified (e.g. WT vs. KO; 
+pre- vs. post-treatment etc.) and brief, biologically meaningful descriptions 
+were created. All data was processed and normalized the same way to identify 
+the gene sets, which correspond to the top or bottom genes 
+(FDR < 0.02 or maximum of 200 genes) ranked by mutual information for each
+assigned comparison.
+
+**Link paper:** <https://www.cell.com/immunity/fulltext/S1074-7613(15)00532-4>
+
+
+* **HAY QUE VER QUÉ SON LAS ENTRADAS.**
+* **Probar a darle el df así en el apartado cell markers.** 
+
+```{r}
+geneImmSginature <- msigdbr(species = "Homo sapiens", category = "C7") %>% 
+  dplyr::select(gs_name, entrez_gene)
+
+immCells <- enricher(unique(allGenesDF$ENTREZID), TERM2GENE = geneImmSginature)
+```
+
+
+```{r}
+dotplot(immCells, showCategory = 10, font.size = 6)
+barplot(immCells, "GeneRatio", showCategory = 10, font.size = 6)
+upsetplot(immCells)
+```
+
+#### Enrichment analysis based on the DisGeNET
+
+```{r}
+dso1 <- enrichDGN(allGenesDF$ENTREZID, readable = TRUE)
+```
+
+```{r}
+dotplot(dso1, showCategory = 20, font.size = 8)
+
+barplot(dso1, showCategory = 20, font.size = 8)
+
+upsetplot(dso1)
+```
+```{r}
+do1 <- enrichDO(allGenesDF$ENTREZID,
+                 readable = TRUE)
+```
+
+```{r}
+dotplot(do1, showCategory = 20, font.size = 8)
+
+barplot(do1, showCategory = 20, font.size = 8)
+
+upsetplot(do1)
+```
+
+#### KEGG Analysis
+
+##### Con clusterProfiler
+
+```{r}
+kegg1 <- enrichKEGG(gene = allGenesDF$ENTREZID,
+                    organism = "hsa")
+```
+
+```{r}
+dotplot(kegg1, showCategory = 20, font.size = 8)
+
+barplot(kegg1, showCategory = 20, font.size = 8)
+
+upsetplot(kegg1)
+```
+
+
+##### Con KEGGGprofile
+
+```{r}
+pho_KEGGresult <- find_enriched_pathway(unique(allGenesDF$ENTREZID), 
+                                        species = 'hsa')
+
+DT::datatable(pho_KEGGresult[[1]])
+```
+
+
+#### Functional enrichment analysis of genomic coordinations
+
+
+## Aproximación 2: coger genes con anotaciones en promotores
+
+```{r promoterGenes}
+genesPromoter <- dataAnnotatr %>% filter(grepl("^(promoter).*", annot.id),
+                                         !is.na(annot.gene_id))
+genesPromoterDF <- data.frame(ENTREZID = genesPromoter$annot.gene_id,
+                              SYMBOL = genesPromoter$annot.symbol)
+ 
+# genesPromoterDF <- bitr(genesPromoter, fromType = "SYMBOL",
+#                       toType = c("ENSEMBL", "ENTREZID"),
+#                       OrgDb = org.Hs.eg.db)
+```
+
+
+### ``clusterProfiler``
+
+#### GO Analysis
+
+##### Over-representation analysis
+
+Aquí podríamos coger como universo otra cosa, pero creo que lo lógico es utilizar 
+todos los genes. 
+
+```{r goPromoterGenes}
+ggo2 <- sapply(c(c("MF", "CC", "BP")), function(x) {
+  enrichGO(unique(genesPromoterDF$ENTREZID), org.Hs.eg.db,
+                 ont = "MF", qvalueCutoff = 0.05,
+                 readable = TRUE)}
+  )
+```
+
+```{r plotGoPromoterGenes}
+dotplot(ggo2$MF, showCategory = 20, font.size = 8)
+
+barplot(ggo2$MF, showCategory = 20, font.size = 8)
+
+upsetplot(ggo2$MF)
+
+goplot(ggo2$MF)
+```
+
+```{r tablePromoterGenes}
+DT::datatable(ggo2$MF@result)
+```
+
+Para evitar la redundancia de los términos, el paquete te permite limpiar 
+entradas redundantes. Pasa de 1014 a 91 términos enriquecidos, ojo jaja. En 
+cualquier caso siguen siendo bastante inespecíficos.
+
+```{r}
+ggo2MFsimplified <- simplify(ggo2$MF)
+
+dotplot(ggo2MFsimplified, showCategory = 20, font.size = 8)
+
+barplot(ggo2MFsimplified, showCategory = 20, font.size = 8)
+```
+
+
+##### GO Semantic Similarity Analysis
+
+Te permite clusterizar genes en función de similitudes en sus términos GO. Te
+permite hacerlo con una lista de genes, por clústeres, etc. Además, mide
+la similitud entre dos términos GO, siendo de hecho esta funcionalidad la que
+implementa el método ``simplify`` de ``clusterProfiler``. Esto podría ser útil
+en transcriptómica para hacer un GSEA si no tenemos una hipótesis previa (si no
+tenemos un geneset previo).
+
+**Ejemplo**
+
+Se podría hacer con los SYMBOL para hacerlo más legible. Utilizo 20 genes porque
+revienta metiéndole todos. 
+
+```{r}
+hsGO <- godata('org.Hs.eg.db', ont="MF")
+
+distan <- mgeneSim(head(genesPromoterDF$ENTREZID, n = 20), semData = hsGO, 
+                   measure = "Wang", combine = "BMA")
+
+pheatmap::pheatmap(distan)
+```
+
+#### Cell Markers analysis
+
+Curiosamente, al llevar a cabo el mismo análisis que el anterior con únicamente
+los genes anotados en los promotores, solo aparecen dos tipos celulares con 
+un q-value significativo: células embrionarias. Esto significa que los genes
+que no están anotados en los promotores son importantes, de hecho GREAT no coge
+solo esos genes, sino los que están a X kb de las anotaciones. Pero bueno, no 
+rayarse, los genesets que utilizamos no tienen por qué ser específicos ni nada. 
+
+**Cambiar función para que plotee bien los resultados**
+
+<https://rdrr.io/bioc/enrichplot/src/R/dotplot.R>
+
+```{r}
+typeCellsPromoters <- enricher(unique(genesPromoterDF$ENTREZID), TERM2GENE = dataHumanCells,
+                      pAdjustMethod = "fdr", minGSSize = 5, qvalueCutoff = 0.2)
+
+dotplot(typeCellsPromoters, showCategory = 50, font.size = 8)
+barplot(typeCellsPromoters, showCategory = 50, font.size = 8)
+```
+
+
+```{r}
+DT::datatable(typeCellsPromoters@result)
+```
+
+
+#### Enrichment analysis based on the DisGeNET
+
+```{r}
+dso2 <- enrichDGN(genesPromoterDF$ENTREZID,
+                 readable = TRUE)
+```
+
+```{r}
+dotplot(dso2, showCategory = 20, font.size = 8)
+
+barplot(dso2, showCategory = 20, font.size = 8)
+
+upsetplot(dso2)
+```
+
+```{r}
+enrichplot::pmcplot(head(dso2$Description), 2012:2019)
+```
+
+<!-- ## ``compareCluster`` -->
+
+<!-- ```{r, eval=FALSE} -->
+<!-- compKEGG <- compareCluster(geneCluster   = unique(allGenesDF$ENTREZID), -->
+<!--                          fun           = "enrichKEGG", -->
+<!--                          pvalueCutoff  = 0.05, -->
+<!--                          pAdjustMethod = "BH") -->
+<!-- ``` -->
+
+
+## Aproximación 3: genes _left join_ con monocitos-iPS
+
+### Anotación del bed
+
+```{r annotationBED, warning=FALSE, message=FALSE}
+
+if (file.exists(file.path(outputPath, "dm_annotated.rds")) &
+    file.exists(file.path(outputPath, "dm_random_annotated.rds"))){
+  
+  dm_annotated <- readRDS(file.path(outputPath, "dm_annotated.rds"))
+  dm_random_annotated <- readRDS(file.path(outputPath, "dm_random_annotated.rds"))
+  df_dm_annotated <- data.frame(dm_annotated)
+  
+} else {
+  
+  regionsInter <- read_regions(con = file.path(analysisPath, "data/intersect_iPScells/solo_monocitos.bed"), 
+                             genome = 'hg19',
+                             format = 'bed')
+
+  annots <- c('hg19_genes_cds', 'hg19_basicgenes', 'hg19_cpgs', 'hg19_genes_intergenic',
+             'hg19_enhancers_fantom')
+  
+  annotations <- build_annotations(genome = 'hg19', annotations = annots)
+  # Intersect the regions we read in with the annotations
+  dm_annotated <- annotate_regions(regions = regionsInter, 
+                                   annotations = annotations,
+                                   minoverlap = 100L, #Overlap of annotations, f=-0.5
+                                   ignore.strand = TRUE,
+                                   quiet = FALSE)
+  
+  df_dm_annotated <- data.frame(dm_annotated)
+  
+  # Randomize the input regions
+  dm_random_regions <- randomize_regions(regions = regionsInter,
+                                        allow.overlaps = TRUE,
+                                        per.chromosome = TRUE)
+  
+  # Annotate the random regions using the same annotations as above
+  # These will be used in later functions
+  dm_random_annotated <- annotate_regions(regions = dm_random_regions,
+                                          annotations = annotations,
+                                          minoverlap = 100L, #Overlap of annotations, f=-0.5
+                                          ignore.strand = TRUE, quiet = TRUE)
+  
+  saveRDS(dm_annotated, file.path(outputPath, "dm_annotated.rds"))
+  saveRDS(dm_random_annotated, file.path(outputPath, "dm_random_annotated.rds"))
+}
+
+
+```
+
+```{r}
+# Find the number of regions per annotation type
+dm_annsum <- summarize_annotations(annotated_regions = dm_annotated, quiet = TRUE)
+print(dm_annsum)
+
+# Count the occurrences of classifications in the Status
+# column across the annotation types.
+dm_catsum <- summarize_categorical(annotated_regions = dm_annotated,
+                                  quiet = TRUE)
+print(dm_catsum)
+```
+#### BED
+
+```{r}
+#View a heatmap of regions occurring in pairs of annotations
+annots_order <- c('hg19_genes_promoters', 'hg19_genes_5UTRs', 
+                  'hg19_genes_exons', 'hg19_genes_introns',
+                  'hg19_genes_3UTRs', 'hg19_genes_cds',
+                  'hg19_enhancers_fantom')
+
+dm_vs_coannotations <- plot_coannotations(annotated_regions = dm_annotated,
+                                          annotation_order = annots_order, 
+                                          axes_label = 'Annotations',
+                                          plot_title = 'Regions in Pairs of Annotations')
+print(dm_vs_coannotations)
+
+dm_annotations_plot <- plot_annotation(annotated_regions = dm_annotated,
+                annotation_order = annots_order,
+                plot_title = 'Annotations for monocytes-iPCs',
+                x_label = 'Annotation type',
+                y_label = 'Count')
+
+print(dm_annotations_plot)
+```
+
+#### With random
+
+```{r}
+# View the number of regions per annotation and include the annotation
+# of randomized regions
+dm_annotations_plot_wrandom = plot_annotation(annotated_regions = dm_annotated,
+                                              annotated_random = dm_random_annotated,
+                                              annotation_order = annots_order,
+                                              plot_title = 'Annotations for monocytes-iPC (with rndm.)',
+                                              x_label = 'Annotation type',
+                                              y_label = 'Count')
+print(dm_annotations_plot_wrandom)
+
+#CpGIslands
+annots_order = c('hg19_cpg_islands', 'hg19_cpg_shores',
+                 'hg19_cpg_shelves', 'hg19_cpg_inter')
+
+dm_annotations_plot_wrandom = plot_annotation(annotated_regions = dm_annotated,
+                                              annotated_random = dm_random_annotated,
+                                              annotation_order = annots_order,
+                                              plot_title = 'Annotations for monocytes-iPC (with rndm.)', 
+                                              x_label = 'Annotation type',
+                                              y_label = 'Count')
+print(dm_annotations_plot_wrandom)
+
+
+```
+
+## Enrichment genes BED
+
+```{r}
+genesMonoIPC <- data.frame(ENTREZID = df_dm_annotated$annot.gene_id,
+                           SYMBOL = df_dm_annotated$annot.symbol)
+
+intersectGenes <- intersect(genesMonoIPC$ENTREZID, allGenesDF$ENTREZID)
+
+cat(">> Número de genes en E1:", length(unique(allGenesDF$ENTREZID)))
+cat("\n>> Número de genes en Mono-iPCs:", length(unique(genesMonoIPC$ENTREZID)))
+cat("\n>> Número de genes coincidentes:", length(intersectGenes))
+```
+
+
+### GO Analysis
+
+```{r}
+ggo3 <- sapply(c("MF", "CC", "BP"), function(term) {
+              enrichGO(unique(genesMonoIPC$ENTREZID), org.Hs.eg.db,
+                             ont = term, qvalueCutoff = 0.05,
+                             readable = TRUE)})
+```
+
+```{r}
+dotplot(ggo3$MF, showCategory = 20, font.size = 8)
+
+barplot(ggo3$MF, showCategory = 20, font.size = 8)
+
+upsetplot(ggo3$MF)
+
+# goplot(ggo1)
+
+```
+
+#### KEGG Analysis
+
+```{r}
+kegg3 <- enrichKEGG(unique(genesMonoIPC$ENTREZID),
+                    organism = "hsa")
+```
+
+```{r}
+dotplot(kegg3, showCategory = 20, font.size = 8)
+
+barplot(kegg3, showCategory = 20, font.size = 8)
+
+upsetplot(kegg3)
+```
+
+
+
+
+
+
+
+
+
+
+

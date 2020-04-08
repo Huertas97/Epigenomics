@@ -1,0 +1,1 @@
+cmd = ../bed_E1_filtrado_0.7/positive_strand.bed hg19 ../Motivos_resultados/ -size 200 -mask -cpg

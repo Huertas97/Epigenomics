@@ -1,0 +1,6 @@
+db_index	motif_id	motif_alt_id	consensus	E-value	adj_p-value	log_adj_p-value	bin_location	bin_width	total_width	sites_in_bin	total_sites	p_success	p-value	mult_tests
+   3	NFIL3_HUMAN.H11MO.0.D		DRTTATGYAAB	3.7e0	   4.6e-3	          -5.38	         0.0	      4.0	        190	         368	      14167	  0.02105	4.9e-5	        94
+
+# CentriMo (Local Motif Enrichment Analysis): Version 5.1.1 compiled on Feb  1 2020 at 23:13:11
+# The format of this file is described at http://meme-suite.org//doc/centrimo-output-format.html.
+# centrimo -seqlen 200 -verbosity 1 -oc centrimo_out -bfile ./background -score 5.0 -ethresh 10.0 ./intersect_E1_f0.7.fasta meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme

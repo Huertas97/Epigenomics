@@ -1,0 +1,155 @@
+---
+title: "DNAseI"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+##################################
+## Venn Diagram
+# install.packages('VennDiagram')
+library(VennDiagram)
+
+library(RColorBrewer)
+
+# Datos para E1 f0.7 con -f 0.5
+# 44008
+# 159457
+# 33969 (77.2%)
+
+# Datos para E1 f0.9 con -f 0.5
+# 39207
+# 159457
+# 30738 (78.4%)
+
+
+
+grid.newpage()
+g <- draw.pairwise.venn(area1 = 44008, area2= 456598, cross.area = 488, 
+                   category = c("State 1", " C001UY-Hypermethylation"),
+                   # lty = rep("blank", 2),
+                   fill = c("red", "orange"), 
+                   alpha = rep(0.5, 2), 
+                   cex = 1.5, # Numeros
+                   fontface = "bold", # Numeros
+                   fontfamily = "sans",  # Numeros
+                   cat.cex = 1.5, # Texto de cada circulo
+                   cat.fontface = "bold", # texto
+                   cat.default.pos = "outer",
+                   cat.col = "black", # color del texto de los circulos
+                   cat.pos = c(-27, 27),
+                   cat.dist = c(0.05, 0.03),
+                   cat.fontfamily = "sans",
+                   cat.just = list(c(0.4, -0.1), c(0.5, -23)),
+                   ext.text = TRUE,
+                   ext.pos = 3, 
+                   ext.dist = 0.02, 
+                   ext.line.lwd = 2,
+                   rotation.degree = 0, # mueves la elipse pequeña
+                   scaled = TRUE, 
+                   euler.d = TRUE, 
+                   ind = TRUE,
+                   margin = c(0.07, 0.07, 0.07, 0.07)) 
+pdf("Overlapping_pb_hyper.pdf")
+require(gridExtra)
+grid.arrange(gTree(children=g), top=textGrob("Segment overlapping", gp=gpar(fontsize=20, fontface= "bold")),
+                                             bottom =textGrob("Posterior probability >= 0.7. Minimum overlapping fraction = 0.5",
+                                                                gp=gpar(fontsize=17)))
+
+
+dev.off()
+```
+
+
+
+
+```{r}
+# Plot para estudiar el cambio de solapamiento con el cambio de f
+
+# A - Por segmentos
+seg <- read.table(file = "./solap_seg.txt", 
+                  header = TRUE, stringsAsFactors = FALSE,
+                  sep = "\t")
+
+# Método 1 - R normal
+plot(x = seg[, 1], y = seg[, 3], xlab = "f", ylab = "Porcentaje de segmentos solapados en total", pch = 19, col = "red", cex = 1)
+lines(seg[, 1], seg[, 3], type = "l")
+
+# Método 2 - R ggplot2
+library(ggplot2)
+library(hrbrthemes)
+# Plot
+# pdf(file = "Estudio_f.pdf")
+ggplot(seg, aes(x=seg[, 1], y=seg[, 3]*100)) +
+  geom_line( color="#69b3a2", size=1, alpha=0.9, linetype=1) +
+  geom_point() +
+  theme_bw() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14),
+        plot.title = element_text(color="black", size=14, face="bold")) + 
+  labs(x = "Minimun overlapping fraction (f)", y = "overlapping segments (%)",
+       title = "Evolution of overlapping with the minimun overlapping fraction (Hypermethylation)", fontsize = 12 )
+
+# dev.off()
+ggsave(file = "Estudio_f_seg_hyper.pdf")
+
+
+# B - por pares de bases
+# A - Por segmentos
+pb <- read.table(file = "./solap_pb.txt", 
+                  header = FALSE, stringsAsFactors = FALSE,
+                  sep = "\t")
+
+par(mar = c(7, 6, 3, 1), mgp = c(4, 1, 0))
+ggplot(pb, aes(x=pb[, 1], y=pb[, 3]*100)) +
+  geom_line( color="#69b3a2", size=1, alpha=0.9, linetype=1) +
+  geom_point() +
+  theme_bw() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
+        plot.title = element_text(color="black", size=14, face="bold")) + 
+  labs(x = "Minimun overlapping fraction (f)", y = "overlapping pb (%)",
+       title = "Evolution of overlapping with the minimun overlapping fraction (Hypermethylation)", fontsize = 50, face ="bold" )
+
+ggsave(file = "Estudio_f_pb_hyper.pdf")
+```
+
+
+
+```{r}
+######################## Calidad 
+
+df_calidad <- read.table(file = "./CD14_monocytesDukeDNaseSeq.pk")
+head(df_calidad)
+# table(df_calidad)
+colnames(df_calidad) <- c("chrom", "start", "end", "name", "score", "strand",
+                          "signalValue", "pValue", "qValue", "peak" )
+
+head(df_calidad)
+
+# pdf("Quality_freq.pdf")
+library(RColorBrewer)
+coul <- brewer.pal(5, "Set2")[1] 
+oldpar <-par
+par(mar = c(7, 6, 3, 1), mgp = c(4, 1, 0))
+barplot(table(cut(df_calidad$score, breaks = seq(400, 1000, by = 100),
+                  labels =paste(c("< 500", "500-600", "600-700",
+                                  "700-800", "800-900", "900-1000")))),
+        yaxt="n", 
+        ylim=c(0, 95000),
+        main = "Quality frequency in DNaseI peaks",
+        cex.main= 1.3,
+        cex.lab = 1.3, 
+        ylab = "Frequency",
+        xlab = "Quality",
+        col = coul)
+marks <- c(seq(0, 90000, by = 10000))
+axis(2,at=marks, las = 2, labels=format(marks,scientific=FALSE))
+# dev.off()
+```
+
+
+

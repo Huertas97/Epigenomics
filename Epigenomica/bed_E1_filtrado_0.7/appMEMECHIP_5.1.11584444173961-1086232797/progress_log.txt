@@ -1,0 +1,258 @@
+Invoking:
+  getsize ./intersect_E1_f0.7.fasta 1> $metrics
+Finished invoke:
+  name: count_seqs  status: 0  time: 0.283092
+Invoking:
+  fasta-most -min 50 < ./intersect_E1_f0.7.fasta 1> $metrics
+Finished invoke:
+  name: most_seqs  status: 0  time: 0.400127
+Invoking:
+  fasta-center -dna -len 100 < ./intersect_E1_f0.7.fasta 1> ./seqs-centered
+Finished invoke:
+  name: center_seqs  status: 0  time: 0.762049
+Invoking:
+  fasta-shuffle-letters ./seqs-centered ./seqs-shuffled -kmer 2 -tag -dinuc -dna -seed 1
+Finished invoke:
+  name: shuffle_seqs  status: 0  time: 0.398121
+Invoking:
+  fasta-get-markov -nostatus -nosummary -dna -m 1 ./intersect_E1_f0.7.fasta ./background
+Finished invoke:
+  name: bg  status: 0  time: 0.173257
+Invoking:
+  meme ./seqs-centered -oc meme_out -mod zoops -nmotifs 3 -minw 6 -maxw 30 -bfile ./background -dna -searchsize 100000 -time 5082 -revcomp -nostatus
+Finished invoke:
+  name: meme  status: 0  time: 2402.770497
+Invoking:
+  dreme -verbosity 1 -oc dreme_out -png -dna -p ./seqs-centered -n ./seqs-shuffled -t 6178 -e 0.05
+Finished invoke:
+  name: dreme  status: 0  time: 6178.253375
+Invoking:
+  centrimo -seqlen 200 -verbosity 1 -oc centrimo_out -bfile ./background -score 5.0 -ethresh 10.0 ./intersect_E1_f0.7.fasta meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: centrimo  status: 0  time: 313.630367
+Invoking:
+  tomtom -verbosity 1 -oc meme_tomtom_out -min-overlap 5 -dist pearson -evalue -thresh 1 -no-ssc meme_out/meme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: meme_tomtom  status: 0  time: 49.459238
+Invoking:
+  tomtom -verbosity 1 -oc dreme_tomtom_out -min-overlap 5 -dist pearson -evalue -thresh 1 -no-ssc dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: dreme_tomtom  status: 0  time: 9.106667
+Invoking:
+  tomtom -verbosity 1 -text -thresh 0.1 ./combined.meme ./combined.meme 1> ./motif_alignment.txt
+Finished invoke:
+  name: align  status: 0  time: 1.658807
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_1 -bgfile ./background -keepprimary -primary CCDCCKCC ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo1  status: 0  time: 1.58458
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_2 -bgfile ./background -keepprimary -primary GGGYGGGR ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo2  status: 0  time: 1.593204
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_3 -bgfile ./background -keepprimary -primary DWAWHHAHWWHWNWAAHAAAWMWAWAWAW ./intersect_E1_f0.7.fasta meme_out/meme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo3  status: 0  time: 1.561994
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_4 -bgfile ./background -keepprimary -primary RGGAAR ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo4  status: 0  time: 1.586197
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_5 -bgfile ./background -keepprimary -primary CBGGRA ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo5  status: 0  time: 1.634753
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_6 -bgfile ./background -keepprimary -primary GGVGGCGGRGGCGGSGGSGGSGSSGGSGG ./intersect_E1_f0.7.fasta meme_out/meme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo6  status: 0  time: 1.581975
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_7 -bgfile ./background -keepprimary -primary DAAATR ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo7  status: 0  time: 1.594372
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_8 -bgfile ./background -keepprimary -primary GCDGCNGC ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo8  status: 0  time: 1.596472
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_9 -bgfile ./background -keepprimary -primary AVWCAC ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo9  status: 0  time: 1.607843
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_10 -bgfile ./background -keepprimary -primary GTGGCKCACGCCTGTAATCCCAGCWMYTTG ./intersect_E1_f0.7.fasta meme_out/meme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo10  status: 0  time: 2.279475
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_11 -bgfile ./background -keepprimary -primary AABATGGC ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo11  status: 0  time: 2.193249
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_12 -bgfile ./background -keepprimary -primary KTCTCY ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo12  status: 0  time: 1.534144
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_13 -bgfile ./background -keepprimary -primary ACGTSAY ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo13  status: 0  time: 1.539758
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_14 -bgfile ./background -keepprimary -primary AAAMARAA ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo14  status: 0  time: 1.572831
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_15 -bgfile ./background -keepprimary -primary GGCTGBR ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo15  status: 0  time: 1.53036
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_16 -bgfile ./background -keepprimary -primary GAGGCBGA ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo16  status: 0  time: 1.586434
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_17 -bgfile ./background -keepprimary -primary CGCATGCG ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo17  status: 0  time: 1.58808
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_18 -bgfile ./background -keepprimary -primary CAGRWA ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo18  status: 0  time: 1.567472
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_19 -bgfile ./background -keepprimary -primary TGCAGTGR ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo19  status: 0  time: 1.585731
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_20 -bgfile ./background -keepprimary -primary RGCTCCGS ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo20  status: 0  time: 1.527044
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_21 -bgfile ./background -keepprimary -primary GTTTCACY ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo21  status: 0  time: 1.579356
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_22 -bgfile ./background -keepprimary -primary AAATTAGC ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo22  status: 0  time: 1.574242
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_23 -bgfile ./background -keepprimary -primary AGCCAATS ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo23  status: 0  time: 1.659791
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_24 -bgfile ./background -keepprimary -primary ATCTCGGC ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo24  status: 0  time: 1.585662
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_25 -bgfile ./background -keepprimary -primary CTGTCRCC ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo25  status: 0  time: 1.616232
+Invoking:
+  spamo -verbosity 1 -oc spamo_out_26 -bgfile ./background -keepprimary -primary CACTTTGG ./intersect_E1_f0.7.fasta dreme_out/dreme.xml meme_out/meme.xml dreme_out/dreme.xml db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme
+Finished invoke:
+  name: spamo26  status: 0  time: 1.5623
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_1 --bgfile ./background --motif CCDCCKCC dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo1  status: 0  time: 5.994046
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_2 --bgfile ./background --motif GGGYGGGR dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo2  status: 0  time: 5.803715
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_3 --bgfile ./background --motif DWAWHHAHWWHWNWAAHAAAWMWAWAWAW meme_out/meme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo3  status: 0  time: 7.525036
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_4 --bgfile ./background --motif RGGAAR dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo4  status: 0  time: 5.599194
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_5 --bgfile ./background --motif CBGGRA dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo5  status: 0  time: 5.654431
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_6 --bgfile ./background --motif GGVGGCGGRGGCGGSGGSGGSGSSGGSGG meme_out/meme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo6  status: 0  time: 7.00874
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_7 --bgfile ./background --motif DAAATR dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo7  status: 0  time: 6.444187
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_8 --bgfile ./background --motif GCDGCNGC dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo8  status: 0  time: 5.73118
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_9 --bgfile ./background --motif AVWCAC dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo9  status: 0  time: 5.610266
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_10 --bgfile ./background --motif GTGGCKCACGCCTGTAATCCCAGCWMYTTG meme_out/meme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo10  status: 0  time: 6.346205
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_11 --bgfile ./background --motif AABATGGC dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo11  status: 0  time: 5.733871
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_12 --bgfile ./background --motif KTCTCY dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo12  status: 0  time: 5.649545
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_13 --bgfile ./background --motif ACGTSAY dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo13  status: 0  time: 5.678582
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_14 --bgfile ./background --motif AAAMARAA dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo14  status: 0  time: 6.155735
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_15 --bgfile ./background --motif GGCTGBR dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo15  status: 0  time: 5.664843
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_16 --bgfile ./background --motif GAGGCBGA dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo16  status: 0  time: 5.743695
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_17 --bgfile ./background --motif CGCATGCG dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo17  status: 0  time: 5.733712
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_18 --bgfile ./background --motif CAGRWA dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo18  status: 0  time: 7.3586
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_19 --bgfile ./background --motif TGCAGTGR dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo19  status: 0  time: 6.172447
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_20 --bgfile ./background --motif RGCTCCGS dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo20  status: 0  time: 5.770576
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_21 --bgfile ./background --motif GTTTCACY dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo21  status: 0  time: 5.850078
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_22 --bgfile ./background --motif AAATTAGC dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo22  status: 0  time: 5.890204
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_23 --bgfile ./background --motif AGCCAATS dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo23  status: 0  time: 5.907662
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_24 --bgfile ./background --motif ATCTCGGC dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo24  status: 0  time: 6.254834
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_25 --bgfile ./background --motif CTGTCRCC dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo25  status: 0  time: 5.814957
+Invoking:
+  fimo --parse-genomic-coord --verbosity 1 --oc fimo_out_26 --bgfile ./background --motif CACTTTGG dreme_out/dreme.xml ./intersect_E1_f0.7.fasta
+Finished invoke:
+  name: fimo26  status: 0  time: 5.755457
+Writing output
+Invoking:
+  meme-chip_html_to_tsv ./meme-chip.html ./summary.tsv "meme-chip -oc . -time 300 -ccut 100 -order 1 -db db/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme -meme-mod zoops -meme-minw 6 -meme-maxw 30 -meme-nmotifs 3 -meme-searchsize 100000 -dreme-e 0.05 -centrimo-score 5.0 -centrimo-ethresh 10.0 intersect_E1_f0.7.fasta" 5.1.1 "Wed Jan 29 15\:00\:42 2020 -0800"
+Finished invoke:
+  name: summary  status: 0  time: 0.278977
+Done

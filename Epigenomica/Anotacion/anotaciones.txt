@@ -1,0 +1,14 @@
+"annot.type" "Status" "n"
+hg19_cpg_inter" "E1" 4863
+hg19_cpg_islands" "E1" 26661
+hg19_cpg_shelves" "E1" 402
+hg19_cpg_shores" "E1" 12128
+hg19_enhancers_fantom" "E1" 1533
+hg19_genes_1to5kb" "E1" 8907
+hg19_genes_3UTRs" "E1" 451
+hg19_genes_5UTRs" "E1" 8615
+hg19_genes_cds" "E1" 3265
+hg19_genes_exons" "E1" 13450
+hg19_genes_intergenic" "E1" 1877
+hg19_genes_introns" "E1" 23180
+hg19_genes_promoters" "E1" 18801

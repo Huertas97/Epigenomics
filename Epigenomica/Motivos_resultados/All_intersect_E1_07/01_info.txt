@@ -1,0 +1,3 @@
+Hemos buscado para todas las regiones de la intersección. Hemos permitido que normalize y genere el background HOMER solo. 
+
+Sería interesante estudiar solo los promotores y normalizando por islas CpG (-CpG)
