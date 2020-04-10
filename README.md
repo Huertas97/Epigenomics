@@ -6,7 +6,7 @@ Repositorio para el trabajo de epigenómica del Máster en Bioinformática y Bio
 
 * Sara Dorado Alfaro
 
-* Diego Mañanes Manzano
+* Diego Mañanes Cayero
 
 * Alejandro Martín Muñoz
 
